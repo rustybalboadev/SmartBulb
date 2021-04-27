@@ -1,4 +1,4 @@
-from app import app
+from app import socket
 
 if __name__ == "__main__":
-    app.run()
+    socket.run()

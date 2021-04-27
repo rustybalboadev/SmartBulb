@@ -5,6 +5,7 @@
         <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
 
         <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
+        <script src="https://cdn.socket.io/socket.io-3.0.1.min.js"></script>
     </head>
     <body>
         <div style="max-width: 720px; margin: 0 auto;">
@@ -15,6 +16,11 @@
                 <div class="half readout">
                     <span class="title">Selected Color:</span>
                     <div id="values"></div><br>
+                    <span class="title">Current Color:</span>
+                    <svg width="20" height="20">
+                        <rect id="colorRect" width="20" height="20" style="fill:#ff0000"></rect>
+                    </svg>
+
                 </div>
             </div>
             <span id="dimLabel">Dim Range: 100</span>
@@ -75,13 +81,15 @@
         }
     </style>
     <script>
+        const socket = io();
+
         var colorPicker = new iro.ColorPicker(".colorPicker", {
             width: 280,
-            color: "rgb(255, 0, 0)",
+            color: {h: {{ h }}, s: {{ s }}, v: {{ v }}},
             borderWidth: 1,
             borderColor: "#fff",
         });
-
+        $("#colorRect").css("fill", colorPicker.color.rgbString)
         var values = document.getElementById("values");
         colorPicker.on(["color:init", "color:change"], function(color){
             values.innerHTML = [
@@ -97,7 +105,7 @@
             xhr.open("POST", "/changeColor", true)
             xhr.setRequestHeader("Content-Type", "application/json");
             var data = {"h": colorPicker.color.hsv.h, "s": colorPicker.color.hsv.s, "v": colorPicker.color.hsv.v}
-            console.log(data)
+            socket.emit("new_color", colorPicker.color.rgbString)
             xhr.send(JSON.stringify(data))
         })
 
@@ -106,13 +114,23 @@
             xhr.open("POST", "/changeDim", true)
             xhr.setRequestHeader("Content-Type", "application/json");
             var data = {"level": $("#dimRange").val()}
-            console.log(data)
+            socket.emit("new_dim", $("#dimRange").val())
             xhr.send(JSON.stringify(data))
         })
 
         $("#dimRange").on("change", function(){
-            console.log($("#dimRange").val())
             $("#dimLabel").text("Dim Range: " + $("#dimRange").val())
+        })
+
+        socket.on("change_color", function(data){
+            $("#colorRect").css("fill", data)
+            colorPicker.color.rgbString = data
+        })
+
+        socket.on("change_dim", function(data){
+            $("#dimRange").val(data)
+            $("#dimLabel").text("Dim Range: " + data)
+            alert("hi")
         })
     </script>
 </html>
