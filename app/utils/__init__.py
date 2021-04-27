@@ -1,0 +1,1 @@
+from .smartthings import STAPI
